@@ -7,16 +7,19 @@ import com.alicansadeler.todolist.dto.TasksUpdateDTO;
 import com.alicansadeler.todolist.entity.Tasks;
 import com.alicansadeler.todolist.entity.User;
 import com.alicansadeler.todolist.enums.Status;
+import com.alicansadeler.todolist.exceptions.ApiException;
 import com.alicansadeler.todolist.mapper.TasksMapper;
 import com.alicansadeler.todolist.repository.TasksRepository;
 import com.alicansadeler.todolist.repository.UserRepository;
 import com.alicansadeler.todolist.service.TasksService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TasksServiceImpl implements TasksService {
@@ -27,73 +30,68 @@ public class TasksServiceImpl implements TasksService {
 
     @Override
     public BaseResponseDTO<TasksResponseDTO> createTask(TasksRequestDTO taskRequest) {
-        Optional<User> optionalUser = userRepository.findById(taskRequest.userId());
+        log.info("Creating new task for user id: {}", taskRequest.userId());
+        User user = userRepository.findById(taskRequest.userId())
+                .orElseThrow(() -> new ApiException("User not found with id: " + taskRequest.userId(), HttpStatus.NOT_FOUND));
 
-        if (optionalUser.isPresent()) {
-            return new BaseResponseDTO<>(false, "User not found", null);
-        }
-
-        Tasks task = taskMapper.toEntity(taskRequest, optionalUser.get());
+        Tasks task = taskMapper.toEntity(taskRequest, user);
         Tasks savedTask = tasksRepository.save(task);
+        log.info("Task created successfully with id: {}", savedTask.getId());
         return new BaseResponseDTO<>(true, "Task created successfully", taskMapper.toDTO(savedTask));
     }
 
     @Override
     public BaseResponseDTO<TasksResponseDTO> getTaskById(int id) {
-        Optional<Tasks> tasks = tasksRepository.findById(id);
+        log.info("Fetching task with id: {}", id);
+        Tasks task = tasksRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Task not found with id: " + id, HttpStatus.NOT_FOUND));
 
-        if (tasks.isPresent()) {
-            return new BaseResponseDTO<>(false, "Task not found", null);
-        }
-
-        return new BaseResponseDTO<>(true, "Task found", taskMapper.toDTO(tasks.get()));
+        log.info("Task found with id: {}", id);
+        return new BaseResponseDTO<>(true, "Task found", taskMapper.toDTO(task));
     }
 
     @Override
     public BaseResponseDTO<List<TasksResponseDTO>> getAllTasks() {
+        log.info("Fetching all tasks");
         List<Tasks> tasks = tasksRepository.findAll();
         List<TasksResponseDTO> taskDTO = tasks.stream()
-                .map(item -> taskMapper.toDTO(item))
+                .map(taskMapper::toDTO)
                 .toList();
-
+        log.info("Found {} tasks", taskDTO.size());
         return new BaseResponseDTO<>(true, "Tasks listed successfully", taskDTO);
     }
 
     @Override
     public BaseResponseDTO<List<TasksResponseDTO>> getTasksByUserId(int userId) {
-        Optional<User> optionalUser = userRepository.findById(userId);
+        log.info("Fetching tasks for user id: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException("User not found with id: " + userId, HttpStatus.NOT_FOUND));
 
-        if (optionalUser.isEmpty()) {
-            return new BaseResponseDTO<>(false, "User not found", null);
-        }
-
-        List<Tasks> tasks = tasksRepository.findByUser(optionalUser.get());
+        List<Tasks> tasks = tasksRepository.findByUser(user);
         List<TasksResponseDTO> taskDTOs = tasks.stream()
                 .map(taskMapper::toDTO)
                 .toList();
-
+        log.info("Found {} tasks for user id: {}", taskDTOs.size(), userId);
         return new BaseResponseDTO<>(true, "Tasks found", taskDTOs);
     }
 
     @Override
     public BaseResponseDTO<List<TasksResponseDTO>> getTasksByStatus(Status status) {
+        log.info("Fetching tasks with status: {}", status);
         List<Tasks> tasks = tasksRepository.findByStatus(status);
         List<TasksResponseDTO> taskDTOs = tasks.stream()
                 .map(taskMapper::toDTO)
                 .toList();
-
+        log.info("Found {} tasks with status {}", taskDTOs.size(), status);
         return new BaseResponseDTO<>(true, "Tasks found", taskDTOs);
     }
 
     @Override
     public BaseResponseDTO<TasksResponseDTO> updateTask(int id, TasksUpdateDTO request) {
-        Optional<Tasks> optionalTask = tasksRepository.findById(id);
+        log.info("Attempting to update task with id: {}", id);
+        Tasks task = tasksRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Task not found with id: " + id, HttpStatus.NOT_FOUND));
 
-        if (optionalTask.isEmpty()) {
-            return new BaseResponseDTO<>(false, "Task not found", null);
-        }
-
-        Tasks task = optionalTask.get();
         task.setTitle(request.title());
         task.setDescription(request.description());
         task.setStatus(request.status());
@@ -101,16 +99,19 @@ public class TasksServiceImpl implements TasksService {
         task.setDueDate(request.dueDate());
 
         Tasks updatedTask = tasksRepository.save(task);
+        log.info("Task updated successfully with id: {}", id);
         return new BaseResponseDTO<>(true, "Task updated successfully", taskMapper.toDTO(updatedTask));
     }
 
     @Override
     public BaseResponseDTO<String> deleteTask(int id) {
+        log.info("Attempting to delete task with id: {}", id);
         if (!tasksRepository.existsById(id)) {
-            return new BaseResponseDTO<>(false, "Task not found", null);
+            throw new ApiException("Task not found with id: " + id, HttpStatus.NOT_FOUND);
         }
 
         tasksRepository.deleteById(id);
+        log.info("Task deleted successfully with id: {}", id);
         return new BaseResponseDTO<>(true, "Task deleted successfully", null);
     }
 }

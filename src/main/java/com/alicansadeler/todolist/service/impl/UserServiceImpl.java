@@ -23,18 +23,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
-    @Override
-    public BaseResponseDTO<UserResponseDTO> createUser(UserRequestDTO dto) {
-        log.info("Creating new user with username: {}", dto.username());
 
-        if(userRepository.existsByUsername(dto.username())) {
-            throw new ApiException("Username already exists: " + dto.username(), HttpStatus.CONFLICT);
-        }
-
-        User savedUser = userRepository.save(userMapper.toEntity(dto));
-        log.info("User created successfully with id: {}", savedUser.getId());
-        return new BaseResponseDTO<>(true, "User created successfully", userMapper.toDTO(savedUser));
-    }
 
     @Override
     public BaseResponseDTO<UserResponseDTO> getUserById(int id) {

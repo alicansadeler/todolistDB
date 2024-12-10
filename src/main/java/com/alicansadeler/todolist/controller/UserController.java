@@ -20,12 +20,7 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
 
-    @PostMapping
-    public ResponseEntity<BaseResponseDTO<UserResponseDTO>> post(@Valid @RequestBody UserRequestDTO userRequestDTO) {
-        BaseResponseDTO<UserResponseDTO> responseDTO = userService.createUser(userRequestDTO);
-        return ResponseEntity.status(responseDTO.isSuccess() ? HttpStatus.CREATED : HttpStatus.BAD_REQUEST)
-                .body(responseDTO);
-    }
+
 
     @GetMapping(ApiUrls.ID)
     public ResponseEntity<BaseResponseDTO<UserResponseDTO>> getUser(@Valid @PathVariable int id) {

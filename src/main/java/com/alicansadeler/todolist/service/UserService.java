@@ -7,7 +7,7 @@ import com.alicansadeler.todolist.dto.UserResponseDTO;
 import java.util.List;
 
 public interface UserService {
-    BaseResponseDTO<UserResponseDTO> createUser(UserRequestDTO request);
+
     BaseResponseDTO<UserResponseDTO> getUserById(int id);
     BaseResponseDTO<List<UserResponseDTO>> getAllUsers();
     BaseResponseDTO<String> deleteUser(int id);

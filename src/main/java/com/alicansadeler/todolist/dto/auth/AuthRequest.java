@@ -1,4 +1,11 @@
 package com.alicansadeler.todolist.dto.auth;
 
-public record AuthRequest(String username, String password) {
-}
+import jakarta.validation.constraints.NotBlank;
+
+public record AuthRequest(
+        @NotBlank(message = "Username cannot be blank")
+        String username,
+
+        @NotBlank(message = "Password cannot be blank")
+        String password
+) {}

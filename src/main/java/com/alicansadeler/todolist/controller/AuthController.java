@@ -1,5 +1,6 @@
 package com.alicansadeler.todolist.controller;
 
+import com.alicansadeler.todolist.dto.auth.AuthRequest;
 import com.alicansadeler.todolist.dto.auth.AuthResponse;
 import com.alicansadeler.todolist.paths.ApiUrls;
 import com.alicansadeler.todolist.service.AuthService;
@@ -13,19 +14,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping
+@RequestMapping(ApiUrls.AUTH)
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
 
     @PostMapping(ApiUrls.LOGIN)
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthResponse authResponse) {
-        return ResponseEntity.ok(authResponse);
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest authRequest) {
+        return ResponseEntity.ok(authService.login(authRequest));
     }
 
     @PostMapping(ApiUrls.REGISTER)
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody AuthResponse authResponse) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody AuthRequest authRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(authRequest));
     }
 }

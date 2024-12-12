@@ -156,4 +156,18 @@ class UserServiceTest {
         verify(userMapper).toDTO(any());
     }
 
+
+    @Test
+    void updateUser_UnSuccess() {
+        int userId = 999;
+        UserRequestDTO request = new UserRequestDTO("newUsername", "newPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+
+        assertThrows(ApiException.class, () -> userService.updateUser(userId, request));
+
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).save(any());
+    }
 }

@@ -3,6 +3,7 @@ package com.alicansadeler.todolist.service;
 import com.alicansadeler.todolist.dto.BaseResponseDTO;
 import com.alicansadeler.todolist.dto.TasksRequestDTO;
 import com.alicansadeler.todolist.dto.TasksResponseDTO;
+import com.alicansadeler.todolist.dto.TasksUpdateDTO;
 import com.alicansadeler.todolist.entity.Tasks;
 import com.alicansadeler.todolist.entity.User;
 import com.alicansadeler.todolist.enums.Priority;
@@ -12,8 +13,6 @@ import com.alicansadeler.todolist.mapper.TasksMapper;
 import com.alicansadeler.todolist.repository.TasksRepository;
 import com.alicansadeler.todolist.repository.UserRepository;
 import com.alicansadeler.todolist.service.impl.TasksServiceImpl;
-import jakarta.validation.constraints.AssertTrue;
-import net.bytebuddy.build.ToStringPlugin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -210,5 +209,87 @@ class TaskServiceTest {
         verify(tasksRepository).findByStatus(mockTasks.get(0).getStatus());
         verify(tasksMapper, times(mockTasks.size())).toDTO(any());
 
+    }
+
+    @Test
+    void updateTask_Success() {
+        TasksUpdateDTO tasksUpdateDTO = new TasksUpdateDTO(
+                "Update Title", "Update description", Status.TODO, Priority.MEDIUM, null
+        );
+
+        Tasks updatedTask = Tasks.builder()
+                .id(mockTasks.get(0).getId())
+                .title(tasksUpdateDTO.title())
+                .description(tasksUpdateDTO.description())
+                .status(tasksUpdateDTO.status())
+                .priority(tasksUpdateDTO.priority())
+                .user(mockUser)
+                .build();
+
+        TasksResponseDTO updatedResponseDTO = new TasksResponseDTO(
+                updatedTask.getId(),
+                tasksUpdateDTO.title(),
+                tasksUpdateDTO.description(),
+                tasksUpdateDTO.status(),
+                tasksUpdateDTO.priority(),
+                null, null, null,
+                mockUser.getId()
+        );
+
+        when(tasksRepository.findById(mockTasks.get(0).getId())).thenReturn(Optional.of(mockTasks.get(0)));
+        when(tasksRepository.save(any())).thenReturn(updatedTask);
+        when(tasksMapper.toDTO(any())).thenReturn(updatedResponseDTO);
+
+        // When
+        BaseResponseDTO<TasksResponseDTO> response = tasksService.updateTask(mockTasks.get(0).getId(), tasksUpdateDTO);
+
+        // Then
+        assertNotNull(response);
+        assertTrue(response.isSuccess());
+        assertEquals(updatedResponseDTO, response.getData());
+        verify(tasksRepository).findById(mockTasks.get(0).getId());
+        verify(tasksRepository).save(any());
+        verify(tasksMapper).toDTO(any());
+    }
+
+
+    @Test
+    void updateTask_UnSuccess() {
+        int taskId = 999;
+        TasksUpdateDTO tasksUpdateDTO = new TasksUpdateDTO(
+                "Update Title", "Update description", Status.TODO, Priority.MEDIUM, null
+        );
+
+        when(tasksRepository.findById(taskId)).thenReturn(Optional.empty());
+
+        assertThrows(ApiException.class, () -> tasksService.updateTask(taskId, tasksUpdateDTO));
+
+        verify(tasksRepository).findById(taskId);
+        verify(tasksRepository, never()).save(any());
+
+    }
+
+    @Test
+    void deleteTasks_Success() {
+        when(tasksRepository.existsById(mockTasks.get(0).getId())).thenReturn(true);
+
+        BaseResponseDTO<String> response = tasksService.deleteTask(mockTasks.get(0).getId());
+
+        assertNotNull(response);
+        assertTrue(response.isSuccess());
+
+        verify(tasksRepository).existsById(mockTasks.get(0).getId());
+        verify(tasksRepository, times(1)).deleteById(mockTasks.get(0).getId());
+
+    }
+
+    @Test
+    void deleteTasks_UnSuccess() {
+        int taskId = 999;
+        when(tasksRepository.existsById(taskId)).thenReturn(false);
+
+        assertThrows(ApiException.class, () -> tasksService.deleteTask(taskId));
+        verify(tasksRepository).existsById(taskId);
+        verify(tasksRepository, never()).deleteById(any());
     }
 }
